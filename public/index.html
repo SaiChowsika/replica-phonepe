@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>PhonePe Replica</title>
+</head>
+<body>
+  <h1>PhonePe Mini App</h1> 
+
+  <div id="login-section">
+    <h2>Login</h2>
+    <input id="username" placeholder="Username">
+    <input id="password" placeholder="Password" type="password">
+    <button onclick="login()">Login</button>
+  </div>
+
+  <div id="app-section" style="display:none;">
+    <h2>Welcome</h2>
+    <button onclick="checkBalance()">Check Balance</button>
+    <p id="balance"></p>
+
+    <h3>Send Money</h3>
+    <input id="toUser" placeholder="Recipient Username">
+    <input id="amount" placeholder="Amount" type="number">
+    <button onclick="sendMoney()">Send</button>
+
+    <h3>Transactions</h3>
+    <button onclick="getTransactions()">Show Transactions</button>
+    <ul id="transactions"></ul>
+  </div>
+
+  <script>
+    let userId = null;
+
+    function login() {
+      fetch('http://localhost:3000/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: document.getElementById('username').value,
+          password: document.getElementById('password').value
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.userId) {
+          userId = data.userId;
+          document.getElementById('login-section').style.display = 'none';
+          document.getElementById('app-section').style.display = 'block';
+        } else {
+          alert(data.message);
+        }
+      });
+    }
+
+    function checkBalance() {
+      fetch(`http://localhost:3000/balance/${userId}`)
+        .then(res => res.json())
+        .then(data => document.getElementById('balance').innerText = `Balance: ₹${data.balance}`);
+    }
+
+    function sendMoney() {
+      fetch('http://localhost:3000/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fromId: userId,
+          toUsername: document.getElementById('toUser').value,
+          amount: parseInt(document.getElementById('amount').value)
+        })
+      })
+      .then(res => res.json())
+      .then(data => alert(data.message));
+    }
+
+    function getTransactions() {
+      fetch(`http://localhost:3000/transactions/${userId}`)
+        .then(res => res.json())
+        .then(data => {
+          const list = document.getElementById('transactions');
+          list.innerHTML = '';
+          data.transactions.forEach(t => {
+            const li = document.createElement('li');
+            li.innerText = `${t.type} ₹${t.amount} ${t.to ? 'to ' + t.to : 'from ' + t.from}`;
+            list.appendChild(li);
+          });
+        });
+    }
+  </script>
+</body>
+</html>
